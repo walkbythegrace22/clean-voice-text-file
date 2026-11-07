@@ -1,0 +1,8 @@
+[
+  {
+    "id": "book_001",
+    "title": "Sample Clean Chapter",
+    "audio_file": "audiobooks/sample_clean.mp3",
+    "voice": "Default Narrator"
+  }
+]
