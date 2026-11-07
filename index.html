@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.json">
+  <title>Clean Voice Reader</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 18px;
+      padding: 24px;
+      width: 100%;
+      max-width: 760px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 1.3rem; margin: 0; color: #38bdf8; }
+    .badge {
+      font-size: 0.75rem;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 8px;
+      border-radius: 12px;
+      color: #38bdf8;
+    }
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 600px) { .inputs-grid { grid-template-columns: 1fr; } }
+    label { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px; }
+    select, input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+    .resume-banner {
+      display: none;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid #38bdf8;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .progress-section {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .time-readout {
+      display: flex;
+      justify-content: space-between;
+      font-family: monospace;
+      color: #38bdf8;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .seek-slider {
+      width: 100%;
+      height: 18px;
+      cursor: pointer;
+    }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-control {
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-play { background: #0284c7; padding: 12px 24px; font-size: 1.05rem; }
+    .status-text {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header-row">
+      <h1>Clean Voice Reader</h1>
+      <span class="badge">NARRATED EDITION</span>
+    </div>
+
+    <div id="resumeBanner" class="resume-banner">
+      <span id="resumeText">Progress restored</span>
+      <button id="btnRestart" class="btn-control" style="padding: 4px 8px; font-size: 0.75rem;">Restart</button>
+    </div>
+
+    <div class="inputs-grid">
+      <div>
+        <label for="bookSelect">Select Synthesized Book:</label>
+        <select id="bookSelect">
+          <option value="">Choose from library...</option>
+        </select>
+      </div>
+      <div>
+        <label for="localFileInput">Or Load Local Audio (.mp3):</label>
+        <input type="file" id="localFileInput" accept="audio/*,audio/mp3">
+      </div>
+    </div>
+
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <div class="progress-section">
+      <div class="time-readout">
+        <span id="currentDisplay">00:00:00</span>
+        <span id="totalDisplay">--:--:--</span>
+      </div>
+      <input type="range" id="seekSlider" class="seek-slider" min="0" max="100" value="0" step="0.1">
+
+      <div class="player-controls">
+        <button id="btnBack15" class="btn-control">⏪ 15s</button>
+        <button id="btnPlayPause" class="btn-control btn-play">▶ Play</button>
+        <button id="btnForward15" class="btn-control">15s ⏩</button>
+
+        <select id="speedSelect" class="btn-control" style="background:#1e293b; color:#38bdf8; border:1px solid #334155;">
+          <option value="0.75">0.75x</option>
+          <option value="1.0" selected>1.0x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2.0">2.0x</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="statusText" class="status-text">Select a clean audiobook to begin.</div>
+  </div>
+
+  <script>
+    const audioPlayer = document.getElementById('audioPlayer');
+    const bookSelect = document.getElementById('bookSelect');
+    const localFileInput = document.getElementById('localFileInput');
+    const speedSelect = document.getElementById('speedSelect');
+    const seekSlider = document.getElementById('seekSlider');
+    const currentDisplay = document.getElementById('currentDisplay');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnBack15 = document.getElementById('btnBack15');
+    const btnForward15 = document.getElementById('btnForward15');
+    const resumeBanner = document.getElementById('resumeBanner');
+    const resumeText = document.getElementById('resumeText');
+    const btnRestart = document.getElementById('btnRestart');
+    const statusText = document.getElementById('statusText');
+
+    let currentBookKey = 'default';
+    let isSeeking = false;
+
+    function formatTime(sec) {
+      if (isNaN(sec) || sec === Infinity || sec < 0) return "--:--:--";
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    // Load library catalog from library.json
+    fetch('./library.json')
+      .then(res => res.json())
+      .then(books => {
+        books.forEach(book => {
+          const opt = document.createElement('option');
+          opt.value = book.audio_file;
+          opt.textContent = `${book.title} (${book.voice})`;
+          bookSelect.appendChild(opt);
+        });
+      })
+      .catch(() => statusText.textContent = "Running in standalone mode.");
+
+    function saveBookmark() {
+      if (audioPlayer.src && audioPlayer.currentTime > 5) {
+        localStorage.setItem(`bookmark_${currentBookKey}`, audioPlayer.currentTime);
+      }
+    }
+
+    function checkBookmark() {
+      const saved = localStorage.getItem(`bookmark_${currentBookKey}`);
+      if (saved && parseFloat(saved) > 5) {
+        audioPlayer.currentTime = parseFloat(saved);
+        resumeBanner.style.display = 'flex';
+        resumeText.textContent = `Resumed from ${formatTime(parseFloat(saved))}`;
+      } else {
+        resumeBanner.style.display = 'none';
+      }
+    }
+
+    bookSelect.addEventListener('change', () => {
+      if (!bookSelect.value) return;
+      currentBookKey = bookSelect.value;
+      audioPlayer.src = bookSelect.value;
+      audioPlayer.load();
+      statusText.textContent = `Loaded: ${bookSelect.options[bookSelect.selectedIndex].text}`;
+    });
+
+    localFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      currentBookKey = file.name;
+      audioPlayer.src = URL.createObjectURL(file);
+      audioPlayer.load();
+      statusText.textContent = `Loaded Local File: ${file.name}`;
+    });
+
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      seekSlider.max = audioPlayer.duration;
+      totalDisplay.textContent = formatTime(audioPlayer.duration);
+      checkBookmark();
+    });
+
+    audioPlayer.addEventListener('timeupdate', () => {
+      if (!isSeeking) {
+        seekSlider.value = audioPlayer.currentTime;
+        currentDisplay.textContent = formatTime(audioPlayer.currentTime);
+      }
+    });
+
+    btnPlayPause.addEventListener('click', () => {
+      if (!audioPlayer.src) return;
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        btnPlayPause.textContent = '⏸ Pause';
+      } else {
+        audioPlayer.pause();
+        saveBookmark();
+        btnPlayPause.textContent = '▶ Play';
+      }
+    });
+
+    btnBack15.addEventListener('click', () => {
+      audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 15);
+      saveBookmark();
+    });
+
+    btnForward15.addEventListener('click', () => {
+      audioPlayer.currentTime = Math.min(audioPlayer.duration || Infinity, audioPlayer.currentTime + 15);
+      saveBookmark();
+    });
+
+    // Speed selection & persistence
+    const savedSpeed = localStorage.getItem('clean_reader_speed');
+    if (savedSpeed) {
+      speedSelect.value = savedSpeed;
+      audioPlayer.playbackRate = parseFloat(savedSpeed);
+    }
+    speedSelect.addEventListener('change', () => {
+      const rate = parseFloat(speedSelect.value);
+      audioPlayer.playbackRate = rate;
+      localStorage.setItem('clean_reader_speed', rate);
+    });
+
+    seekSlider.addEventListener('input', () => {
+      isSeeking = true;
+      currentDisplay.textContent = formatTime(seekSlider.value);
+    });
+
+    seekSlider.addEventListener('change', () => {
+      audioPlayer.currentTime = seekSlider.value;
+      isSeeking = false;
+      saveBookmark();
+    });
+
+    btnRestart.addEventListener('click', () => {
+      audioPlayer.currentTime = 0;
+      localStorage.removeItem(`bookmark_${currentBookKey}`);
+      resumeBanner.style.display = 'none';
+    });
+
+    window.addEventListener('beforeunload', saveBookmark);
+  </script>
+</body>
+</html>
