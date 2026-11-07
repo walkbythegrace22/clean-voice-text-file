@@ -4,5 +4,11 @@
     "title": "Sample Clean Chapter",
     "audio_file": "audiobooks/sample_clean.mp3",
     "voice": "Default Narrator"
+  },
+  {
+    "id": "book_002",
+    "title": "Lotr1",
+    "audio_file": "audiobooks/lotr1_clean.mp3",
+    "voice": "Macho Man Voice"
   }
 ]
