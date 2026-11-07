@@ -11,4 +11,25 @@
     "audio_file": "audiobooks/lotr1_clean.mp3",
     "voice": "Macho Man Voice"
   }
+  {
+    "id": "book_001",
+    "title": "Callaway Ranch",
+    "voice": "Macho Man",
+    "total_chapters": 3,
+    "chapters": [
+      {
+        "chapter_number": 1,
+        "title": "Chapter 1: The Arrival",
+        "audio_file": "audiobooks/book1_ch01.mp3",
+        "transcript_file": "transcripts/book1_ch01.json"
+      },
+      {
+        "chapter_number": 2,
+        "title": "Chapter 2: The Confrontation",
+        "audio_file": "audiobooks/book1_ch02.mp3",
+        "transcript_file": "transcripts/book1_ch02.json"
+      }
+    ]
+  }
+  
 ]
